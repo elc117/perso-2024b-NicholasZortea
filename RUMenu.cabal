@@ -1,0 +1,18 @@
+cabal-version:       >=1.10
+name:                RUMenu
+version:             0.1.0.0
+license-file:        LICENSE
+author:              Nicholas Zortea Graczik
+maintainer:          zorteanicholas619@gmail.com
+build-type:          Simple
+extra-source-files:  CHANGELOG.md, README.md
+
+executable RUMenu
+  main-is:             Main.hs
+  hs-source-dirs:      src
+  build-depends:       base >=4.13 && <4.14
+                      , scotty >=0.12 && <0.13
+                      , wai >=3 && <4
+                      , wai-extra >=3 && <4
+                      , text >=1.2 && <1.3 
+  default-language:    Haskell2010
