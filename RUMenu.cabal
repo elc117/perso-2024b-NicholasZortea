@@ -10,9 +10,16 @@ extra-source-files:  CHANGELOG.md, README.md
 executable RUMenu
   main-is:             Main.hs
   hs-source-dirs:      src
-  build-depends:       base >=4.13 && <4.14
-                      , scotty >=0.12 && <0.13
-                      , wai >=3 && <4
-                      , wai-extra >=3 && <4
-                      , text >=1.2 && <1.3 
+  build-depends:       
+    base >= 4.7 && < 5,
+    http-client >= 0.5,
+    http-client-tls >= 0.3,
+    scotty >= 0.11,
+    wai-extra >= 3,
+    bytestring,
+    http-types,
+    text,
+    aeson,
+    time
+
   default-language:    Haskell2010
