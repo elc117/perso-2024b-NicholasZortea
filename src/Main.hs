@@ -11,6 +11,7 @@ import Network.HTTP.Client.TLS (getGlobalManager)
 import Data.Aeson (Value,decode)
 import Data.Time.Clock (getCurrentTime, utctDayTime)
 import Data.Time.Clock.POSIX (getPOSIXTime)
+import EmailsHandler
 -- Função principal que primeiro captura os cookies e depois faz outra requisição usando eles
 
 getBody :: String -> IO (Maybe Value)  -- Alterado para retornar um Maybe Value (JSON)
@@ -23,14 +24,13 @@ getBody url = do
 
 getInicio :: IO String
 getInicio = do
-    currentTime <- round <$> getPOSIXTime  -- Obtém o tempo atual em segundos
-    return (show currentTime)      -- Converte para milissegundos
-
+    currentTime <- round <$> getPOSIXTime  
+    return (show currentTime)      
 getFim :: IO String
 getFim = do
     inicio <- getInicio
     let inicioMillis = read inicio :: Int  -- Converte o resultado de volta para Int
-    return (show (inicioMillis + 86400000)) -- Adiciona 86400000 milissegundos (1 dia)
+    return (show (inicioMillis + 86400)) -- Adiciona 86400000 milissegundos (1 dia)
 
 
 main :: IO ()
@@ -52,3 +52,10 @@ main = scotty 3000 $ do
         case body of
             Just jsonBody -> json jsonBody       -- Retorna a resposta como JSON
             Nothing       -> text "Erro ao processar JSON"  -- Caso o parsing falhe
+    
+    post "/addEmail/:e" $ do
+        email <- param "e" :: ActionM String
+        resultado <- liftIO (adicionaEmail "src/emails.txt" email)
+        case resultado of
+            Right () -> text "Email adicionado com sucesso!"
+            Left msg -> text (pack msg)
