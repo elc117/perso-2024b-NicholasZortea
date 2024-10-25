@@ -6,6 +6,7 @@ import Data.Text.Lazy (Text, pack)
 import Network.HTTP.Types.Header (hContentType)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Lazy.Char8 as L8
+import Network.HTTP.Types.Status (conflict409)
 import Network.HTTP.Client (defaultManagerSettings, Manager, httpLbs, parseRequest, responseBody)
 import Network.HTTP.Client.TLS (getGlobalManager)
 import Data.Aeson (Value,decode)
@@ -58,4 +59,6 @@ main = scotty 3000 $ do
         resultado <- liftIO (adicionaEmail "src/emails.txt" email)
         case resultado of
             Right () -> text "Email adicionado com sucesso!"
-            Left msg -> text (pack msg)
+            Left msg -> do
+                status conflict409
+                text (pack msg)
