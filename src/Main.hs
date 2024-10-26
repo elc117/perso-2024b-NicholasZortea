@@ -62,3 +62,12 @@ main = scotty 3000 $ do
             Left msg -> do
                 status conflict409
                 text (pack msg)
+
+    delete "/deleteEmail/:e" $ do
+        email <- param "e" :: ActionM String
+        resultado <- liftIO (deletaEmail "src/emails.txt" email)
+        case resultado of
+            Right () -> text "Email deletado com sucesso!"
+            Left msg -> do
+                status conflict409
+                text (pack msg)
