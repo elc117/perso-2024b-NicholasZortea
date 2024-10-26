@@ -13,6 +13,7 @@ import Data.Aeson (Value,decode)
 import Data.Time.Clock (getCurrentTime, utctDayTime)
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import EmailsHandler
+
 -- Função principal que primeiro captura os cookies e depois faz outra requisição usando eles
 
 getBody :: String -> IO (Maybe Value)  -- Alterado para retornar um Maybe Value (JSON)
@@ -71,3 +72,7 @@ main = scotty 3000 $ do
             Left msg -> do
                 status conflict409
                 text (pack msg)
+    
+    get "/getEmails" $ do
+        emails <- liftIO (getEmails "src/emails.txt")
+        text (pack emails)

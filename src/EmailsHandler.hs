@@ -2,7 +2,15 @@ module EmailsHandler where
 
 import System.IO
 import Data.Char(toUpper)
+import Data.List (intercalate)
 
+-- retorna emails na forma ["email1", "email2"]
+getEmails :: FilePath -> IO String
+getEmails path = do
+    emails <- leArquivo path
+    let formatedEmails = map(\s -> s++", ")emails
+    let stringWithEmails = intercalate "" formatedEmails
+    return stringWithEmails
 --recebe um caminho de arquivo e retorna uma lista de emails
 leArquivo :: FilePath -> IO [String]
 leArquivo nomeArquivo = do
@@ -41,19 +49,22 @@ adicionaEmail path email = do
         else
             return (Left "Email já existe!")
 
+-- se o email não existe retorna que o email não existe, se existe deleta ele do arquivo
 deletaEmail :: FilePath -> String -> IO (Either String ())
 deletaEmail path email = do
     existe <- emailExiste path email
     if existe
         then do
             conteudoDoArquivo <- leArquivo path
-            adicionaAoArquivo path $ filter (\x -> x /= email)conteudoDoArquivo
+            -- passa uma lista que filtra todos os emails que NÃO são o que é para deletar
+            reescreveArquivo path $ filter (\x -> x /= email)conteudoDoArquivo
             return (Right ())
         else
             return (Left "Email não existe!")
 
-adicionaAoArquivo :: FilePath -> [String] -> IO ()
-adicionaAoArquivo path strings = do
+-- reescreve o arquivo com base na lista de Strings
+reescreveArquivo :: FilePath -> [String] -> IO ()
+reescreveArquivo path strings = do
     arquivo <- openFile path WriteMode
     mapM_ (hPutStrLn arquivo)strings
     hClose arquivo
