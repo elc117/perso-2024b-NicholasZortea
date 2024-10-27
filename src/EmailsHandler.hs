@@ -3,6 +3,7 @@ module EmailsHandler where
 import System.IO
 import Data.Char(toUpper)
 import Data.List (intercalate)
+import Data.List.Split (splitOn)
 
 -- retorna emails na forma ["email1", "email2"]
 getEmails :: FilePath -> IO String
@@ -68,3 +69,21 @@ reescreveArquivo path strings = do
     arquivo <- openFile path WriteMode
     mapM_ (hPutStrLn arquivo)strings
     hClose arquivo
+
+-- retorna o email que realiza os envios em formato de lista de tupla (propriedade, valor)
+getEmailSender :: FilePath ->  IO [(String, String)]
+getEmailSender path = do
+    propvalues <- leArquivo path
+    return (map getPropAndValue propvalues)
+
+getPropAndValue :: String -> (String, String)
+getPropAndValue propvalue = (prop, value)
+    where
+        list = splitOn ":" propvalue
+        prop = head list
+        value = last list
+
+-- Dada uma lista de tuplas de propriedade, valor e uma string que representa a propriedade que se 
+-- deseja obter o valor, retorna esse valor.
+getDesiredValue :: String -> [(String, String)] -> [Char]
+getDesiredValue prop x = snd $ head $ filter(\(z,y) -> z == prop)x

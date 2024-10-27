@@ -9,7 +9,7 @@ extra-source-files:  CHANGELOG.md, README.md
 
 executable RUMenu
   main-is:             Main.hs
-  exposed-modules:     EmailsHandler.hs
+  other-modules:       EmailsHandler, MailSender
   hs-source-dirs:      src
   build-depends:       
     base >= 4.7 && < 5,
@@ -21,6 +21,10 @@ executable RUMenu
     http-types,
     text,
     aeson,
-    time
+    time,
+    HaskellNet,
+    HaskellNet-SSL,
+    mime-mail,
+    split
 
   default-language:    Haskell2010

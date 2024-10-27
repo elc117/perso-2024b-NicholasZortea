@@ -13,6 +13,7 @@ import Data.Aeson (Value,decode)
 import Data.Time.Clock (getCurrentTime, utctDayTime)
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import EmailsHandler
+import MailSender
 
 -- Função principal que primeiro captura os cookies e depois faz outra requisição usando eles
 
@@ -33,7 +34,6 @@ getFim = do
     inicio <- getInicio
     let inicioMillis = read inicio :: Int  -- Converte o resultado de volta para Int
     return (show (inicioMillis + 86400)) -- Adiciona 86400000 milissegundos (1 dia)
-
 
 main :: IO ()
 main = scotty 3000 $ do
@@ -76,3 +76,19 @@ main = scotty 3000 $ do
     get "/getEmails" $ do
         emails <- liftIO (getEmails "src/emails.txt")
         text (pack emails)
+
+    get "/TesteEmail" $ do
+        liftIO $ sendEMail "giordanacamilla@gmail.com" "<!DOCTYPE html>\
+                  \ <html lang=\"pt-BR\">\
+                  \ <head>\
+                  \ <meta charset=\"UTF-8\">\
+                  \ <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\
+                  \ <title>Teste de E-mail</title>\
+                  \ </head>\
+                  \ <body>\
+                  \ <h1>Teste de E-mail</h1>\
+                  \ <p>Olá, este é um teste de envio de e-mail usando Haskell!</p>\
+                  \ <p>Se você está vendo isso, significa que o envio foi bem-sucedido!</p>\
+                  \ </body>\
+                  \ </html>"
+        text "E-mail enviado com sucesso!"
