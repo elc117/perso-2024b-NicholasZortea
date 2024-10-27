@@ -14,6 +14,7 @@ import Data.Time.Clock (getCurrentTime, utctDayTime)
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import EmailsHandler
 import MailSender
+import Pages
 
 -- Função principal que primeiro captura os cookies e depois faz outra requisição usando eles
 
@@ -57,7 +58,7 @@ main = scotty 3000 $ do
     
     post "/addEmail/:e" $ do
         email <- param "e" :: ActionM String
-        resultado <- liftIO (adicionaEmail "src/emails.txt" email)
+        resultado <- liftIO (adicionaEmail "src/data/emails.txt" email)
         case resultado of
             Right () -> text "Email adicionado com sucesso!"
             Left msg -> do
@@ -66,7 +67,7 @@ main = scotty 3000 $ do
 
     delete "/deleteEmail/:e" $ do
         email <- param "e" :: ActionM String
-        resultado <- liftIO (deletaEmail "src/emails.txt" email)
+        resultado <- liftIO (deletaEmail "src/data/emails.txt" email)
         case resultado of
             Right () -> text "Email deletado com sucesso!"
             Left msg -> do
@@ -74,7 +75,7 @@ main = scotty 3000 $ do
                 text (pack msg)
     
     get "/getEmails" $ do
-        emails <- liftIO (getEmails "src/emails.txt")
+        emails <- liftIO (getEmails "src/data/emails.txt")
         text (pack emails)
 
     get "/TesteEmail" $ do
@@ -92,3 +93,13 @@ main = scotty 3000 $ do
                   \ </body>\
                   \ </html>"
         text "E-mail enviado com sucesso!"
+    
+    get "/" $ do
+        pagina <- liftIO $ getMainPage "src/data/emails.txt"
+        html (pack $ pagina)
+
+    get "/css" $ do
+        file "src/style.css"
+    
+    get "/javascript" $ do
+        file "src/script.js"

@@ -36,7 +36,7 @@ getMail remetente destinatario mensagem =
 
 sendEMail :: String -> String -> IO ()
 sendEMail destinatario mensagem = doSMTPSTARTTLS "smtp.gmail.com" $ \conn -> do
-    propsAndValues <- getEmailSender "src/sender.txt"
+    propsAndValues <- getEmailSender "src/data/sender.txt"
     let sender = getDesiredValue "email" propsAndValues
     let pass = getDesiredValue "pass" propsAndValues
     authSucceed <- SMTP.authenticate LOGIN sender pass conn
