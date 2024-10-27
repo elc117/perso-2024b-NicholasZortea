@@ -13,13 +13,14 @@ import qualified Data.Aeson as Aeson
 import Network.HTTP.Types.Status (conflict409)
 import Network.HTTP.Client (defaultManagerSettings, Manager, httpLbs, parseRequest, responseBody)
 import Network.HTTP.Client.TLS (getGlobalManager)
-import Data.Aeson (Value,decode)
-import Data.Time.Clock (getCurrentTime, utctDayTime)
-import Data.Time.Clock.POSIX (getPOSIXTime)
+import Data.Aeson (Value,decode, encode)
+import Data.Time (getCurrentTime, utctDay, addDays, diffUTCTime, UTCTime(..))
+import Data.Time.Clock.POSIX (getPOSIXTime, utcTimeToPOSIXSeconds)
 import Data.Maybe (fromMaybe)
 import EmailsHandler
 import MailSender
 import Pages
+import Text.Printf(printf)
 import qualified Data.Text as Txt
 import Refeicoes
 
@@ -35,40 +36,36 @@ getBody url = do
 
 getInicio :: IO String
 getInicio = do
-    currentTime <- round <$> getPOSIXTime  
-    return (show currentTime)      
-getFim :: IO String
-getFim = do
-    inicio <- getInicio
-    let inicioMillis = read inicio :: Int  -- Converte o resultado de volta para Int
-    return (show (inicioMillis + 86400)) -- Adiciona 86400000 milissegundos (1 dia)
+    currentTime <- getCurrentTime
+    let today = utctDay currentTime
+        midnightNextDay = UTCTime (addDays 2 today) 0  -- Próxima meia-noite
+        midnightTimestamp = utcTimeToPOSIXSeconds midnightNextDay  -- Converte para timestamp UNIX
+    return (printf "%.0f" (realToFrac midnightTimestamp :: Double)) -- Formata o timestamp como String
+
+--Função que faz a requisição e salva o JSON em um arquivo
+saveCardapio :: IO (Maybe Value)
+saveCardapio = do
+    inicio <- getInicio  -- Chama getInicio para obter o timestamp
+    putStrLn $ "timestamp: " ++ inicio
+    let url = "https://portal.ufsm.br/ru/publico/buscarCardapio.json?inicio=" ++ inicio ++ "&fim=" ++ inicio ++ "&idRestaurante=1&tiposRefeicao%5B%5D=1&tiposRefeicao%5B%5D=2&tiposRefeicao%5B%5D=3"
+    
+    putStrLn $ "Requisição para a URL: " ++ url
+    body <- getBody url
+    case body of
+        Just jsonBody -> do
+            currentDir <- getCurrentDirectory
+            let filePath = currentDir </> "cardapio.json"
+            L.writeFile filePath (encode jsonBody)
+            putStrLn $ "JSON salvo em: " ++ filePath
+            return (Just jsonBody)
+        Nothing -> do
+            putStrLn "Erro ao processar JSON"
+            return Nothing
+
 
 main :: IO ()
 main = scotty 3000 $ do
     middleware logStdoutDev
-
-    get "/cardapio" $ do
-        inicio <- liftIO getInicio  -- Chama getInicio
-        fim <- liftIO getFim        -- Chama getFim
-        let url = "https://portal.ufsm.br/ru/publico/buscarCardapio.json?inicio=1729998000&fim=1729998000&idRestaurante=1&tiposRefeicao%5B%5D=1&tiposRefeicao%5B%5D=2&tiposRefeicao%5B%5D=3"
-        
-         -- Imprime a URL no console
-        liftIO $ putStrLn $ "Requisição para a URL: " ++ url
-
-
-        body <- liftIO $ getBody url
-        case body of
-            Just jsonBody -> do
-                -- Obtém o diretório atual e cria o caminho do arquivo
-                currentDir <- liftIO getCurrentDirectory
-                let filePath = currentDir </> "cardapio.json"
-                
-                -- Converte jsonBody (Value) para ByteString e salva no arquivo
-                liftIO $ L.writeFile filePath (Aeson.encode jsonBody)
-                liftIO $ putStrLn $ "JSON salvo em: " ++ filePath
-                
-                json jsonBody  -- Retorna a resposta como JSON
-            Nothing -> text "Erro ao processar JSON"  -- Caso o parsing falhe
     
     post "/addEmail/:e" $ do
         email <- param "e" :: ActionM String
@@ -91,25 +88,10 @@ main = scotty 3000 $ do
     get "/getEmails" $ do
         emails <- liftIO (getEmails "src/data/emails.txt")
         text (pack emails)
-
-    get "/TesteEmail" $ do
-        liftIO $ sendEMail "giordanacamilla@gmail.com" "<!DOCTYPE html>\
-                  \ <html lang=\"pt-BR\">\
-                  \ <head>\
-                  \ <meta charset=\"UTF-8\">\
-                  \ <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\
-                  \ <title>Teste de E-mail</title>\
-                  \ </head>\
-                  \ <body>\
-                  \ <h1>Teste de E-mail</h1>\
-                  \ <p>Olá, este é um teste de envio de e-mail usando Haskell!</p>\
-                  \ <p>Se você está vendo isso, significa que o envio foi bem-sucedido!</p>\
-                  \ </body>\
-                  \ </html>"
-        text "E-mail enviado com sucesso!"
     
     get "/" $ do
-        pagina <- liftIO $ getMainPage "src/data/emails.txt"
+        liftIO saveCardapio
+        pagina <- liftIO $ getMainPage "src/data/emails.txt" "cardapio.json"
         html (pack $ pagina)
 
     get "/css" $ do
@@ -120,19 +102,26 @@ main = scotty 3000 $ do
 
     get "/sendMailToAll" $ do 
         allMails <- liftIO $ leArquivo "src/data/emails.txt"
-        liftIO $ mapM_(\x -> sendEMail x "teste") allMails
+        cardapio <- liftIO $ getDivCardapio "cardapio.json"
+        liftIO $ mapM_(\x -> sendEMail x cardapio) allMails
         text "E-mails enviados!"
 
-    get "/testeJsonParse" $ do
-        let string = getJsonString
-        liftIO $ putStrLn $ "JSON String: " ++ string  -- Para verificar o JSON
+    -- get "/testeJsonParse" $ do
+       -- let string = getJsonString
+    --    liftIO $ putStrLn $ "JSON String: " ++ string  -- Para verificar o JSON
 
-        refeicoes <- liftIO $ getRefeicoes "src/cardapio.json"  -- Chamada de IO agora
-        let refeicoes' = fromMaybe [] refeicoes
-        liftIO $ print refeicoes'  -- Imprime a lista de refeicoes
+--        refeicoes <- liftIO $ getRefeicoes "cardapio.json"  -- Chamada de IO agora
+   --     let refeicoes' = fromMaybe [] refeicoes
+     --   liftIO $ print refeicoes'  -- Imprime a lista de refeicoes
 
-        let cafe = filter (\r -> title r == "Café") refeicoes'
-        liftIO $ print (length cafe)  -- Imprime a quantidade filtrada
+       -- let tupla = getRefeicaoFormatoCorreto refeicoes' -- [(titulo, [alimentos])]
+       -- liftIO $ putStrLn $ "Tuplas: " 
+       -- mapM_ (\(titulo, alimentos) -> do
+       --     liftIO $ putStrLn titulo  -- imprime o título
+        --    printStrings alimentos) tupla
 
-        let descricoes = unlines $ map(Txt.unpack . descricao) cafe
-        text $ pack descricoes
+--        let cafe = filter (\r -> title r == "Café") refeicoes'
+  --      liftIO $ print (length cafe)  -- Imprime a quantidade filtrada
+
+--        let descricoes = unlines $ map(Txt.unpack . descricao) cafe
+  --      text $ pack descricoes

@@ -1,8 +1,25 @@
 body {
     display: flex;
     justify-content: center;
+    flex-direction: column;
 }
 
-.flex{
+.margin{
+    margin: 20;
+    padding: 20;
+    border: 1px solid black;
+    border-radius: 10;
+}
+
+.menuAndMails{
     display: flex;
+}
+
+.sendBtn{
+    background-color: lightgreen;
+    width: 50%;
+    height: 80px;
+    border-radius: 20px;
+    font-size: large;
+    color: white;
 }
