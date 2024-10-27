@@ -6,15 +6,22 @@ import Data.Text.Lazy (Text, pack)
 import Network.HTTP.Types.Header (hContentType)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Lazy.Char8 as L8
+import qualified Data.ByteString.Lazy as L
+import System.FilePath ((</>))  -- Para construção de caminhos de arquivo
+import System.Directory (getCurrentDirectory)
+import qualified Data.Aeson as Aeson
 import Network.HTTP.Types.Status (conflict409)
 import Network.HTTP.Client (defaultManagerSettings, Manager, httpLbs, parseRequest, responseBody)
 import Network.HTTP.Client.TLS (getGlobalManager)
 import Data.Aeson (Value,decode)
 import Data.Time.Clock (getCurrentTime, utctDayTime)
 import Data.Time.Clock.POSIX (getPOSIXTime)
+import Data.Maybe (fromMaybe)
 import EmailsHandler
 import MailSender
 import Pages
+import qualified Data.Text as Txt
+import Refeicoes
 
 -- Função principal que primeiro captura os cookies e depois faz outra requisição usando eles
 
@@ -43,9 +50,7 @@ main = scotty 3000 $ do
     get "/cardapio" $ do
         inicio <- liftIO getInicio  -- Chama getInicio
         fim <- liftIO getFim        -- Chama getFim
-        let url = "https://portal.ufsm.br/ru/publico/buscarCardapio.json?inicio=" 
-                    ++ inicio ++ "&fim=" ++ fim 
-                    ++ "&idRestaurante=1&tiposRefeicao%5B%5D=1&tiposRefeicao%5B%5D=2&tiposRefeicao%5B%5D=3"
+        let url = "https://portal.ufsm.br/ru/publico/buscarCardapio.json?inicio=1729998000&fim=1729998000&idRestaurante=1&tiposRefeicao%5B%5D=1&tiposRefeicao%5B%5D=2&tiposRefeicao%5B%5D=3"
         
          -- Imprime a URL no console
         liftIO $ putStrLn $ "Requisição para a URL: " ++ url
@@ -53,8 +58,17 @@ main = scotty 3000 $ do
 
         body <- liftIO $ getBody url
         case body of
-            Just jsonBody -> json jsonBody       -- Retorna a resposta como JSON
-            Nothing       -> text "Erro ao processar JSON"  -- Caso o parsing falhe
+            Just jsonBody -> do
+                -- Obtém o diretório atual e cria o caminho do arquivo
+                currentDir <- liftIO getCurrentDirectory
+                let filePath = currentDir </> "cardapio.json"
+                
+                -- Converte jsonBody (Value) para ByteString e salva no arquivo
+                liftIO $ L.writeFile filePath (Aeson.encode jsonBody)
+                liftIO $ putStrLn $ "JSON salvo em: " ++ filePath
+                
+                json jsonBody  -- Retorna a resposta como JSON
+            Nothing -> text "Erro ao processar JSON"  -- Caso o parsing falhe
     
     post "/addEmail/:e" $ do
         email <- param "e" :: ActionM String
@@ -103,3 +117,22 @@ main = scotty 3000 $ do
     
     get "/javascript" $ do
         file "src/script.js"
+
+    get "/sendMailToAll" $ do 
+        allMails <- liftIO $ leArquivo "src/data/emails.txt"
+        liftIO $ mapM_(\x -> sendEMail x "teste") allMails
+        text "E-mails enviados!"
+
+    get "/testeJsonParse" $ do
+        let string = getJsonString
+        liftIO $ putStrLn $ "JSON String: " ++ string  -- Para verificar o JSON
+
+        refeicoes <- liftIO $ getRefeicoes "src/cardapio.json"  -- Chamada de IO agora
+        let refeicoes' = fromMaybe [] refeicoes
+        liftIO $ print refeicoes'  -- Imprime a lista de refeicoes
+
+        let cafe = filter (\r -> title r == "Café") refeicoes'
+        liftIO $ print (length cafe)  -- Imprime a quantidade filtrada
+
+        let descricoes = unlines $ map(Txt.unpack . descricao) cafe
+        text $ pack descricoes

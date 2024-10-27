@@ -12,7 +12,8 @@ getEmails path = do
     let formatedEmails = map(\s -> s++", ")emails
     let stringWithEmails = intercalate "" formatedEmails
     return stringWithEmails
---recebe um caminho de arquivo e retorna uma lista de emails
+
+--recebe um caminho de arquivo e retorna uma lista de string delimitada pela quebra de linha
 leArquivo :: FilePath -> IO [String]
 leArquivo nomeArquivo = do
     inh <- openFile nomeArquivo ReadMode
