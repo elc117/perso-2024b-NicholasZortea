@@ -105,23 +105,3 @@ main = scotty 3000 $ do
         cardapio <- liftIO $ getDivCardapio "cardapio.json"
         liftIO $ mapM_(\x -> sendEMail x cardapio) allMails
         text "E-mails enviados!"
-
-    -- get "/testeJsonParse" $ do
-       -- let string = getJsonString
-    --    liftIO $ putStrLn $ "JSON String: " ++ string  -- Para verificar o JSON
-
---        refeicoes <- liftIO $ getRefeicoes "cardapio.json"  -- Chamada de IO agora
-   --     let refeicoes' = fromMaybe [] refeicoes
-     --   liftIO $ print refeicoes'  -- Imprime a lista de refeicoes
-
-       -- let tupla = getRefeicaoFormatoCorreto refeicoes' -- [(titulo, [alimentos])]
-       -- liftIO $ putStrLn $ "Tuplas: " 
-       -- mapM_ (\(titulo, alimentos) -> do
-       --     liftIO $ putStrLn titulo  -- imprime o título
-        --    printStrings alimentos) tupla
-
---        let cafe = filter (\r -> title r == "Café") refeicoes'
-  --      liftIO $ print (length cafe)  -- Imprime a quantidade filtrada
-
---        let descricoes = unlines $ map(Txt.unpack . descricao) cafe
-  --      text $ pack descricoes
