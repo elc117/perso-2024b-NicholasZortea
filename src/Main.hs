@@ -38,7 +38,7 @@ getInicio :: IO String
 getInicio = do
     currentTime <- getCurrentTime
     let today = utctDay currentTime
-        midnightNextDay = UTCTime (addDays 2 today) 0  -- Próxima meia-noite
+        midnightNextDay = UTCTime (addDays 1 today) 0  -- Próxima meia-noite
         midnightTimestamp = utcTimeToPOSIXSeconds midnightNextDay  -- Converte para timestamp UNIX
     return (printf "%.0f" (realToFrac midnightTimestamp :: Double)) -- Formata o timestamp como String
 

@@ -34,12 +34,6 @@ getRefeicoes filePath = do
             hPutStrLn stderr "Erro ao decodificar o JSON."  -- Usa stderr para erros
             return Nothing
 
-getJsonString :: String
-getJsonString = "{\n"++
-  "\"descricao\": \"ovo,tomate,carne\",\n"++
-  "\"title\": \"Café\"\n"++
-    "}"
-
 getRefeicaoAsTupla :: Refeicao -> (String, String)
 getRefeicaoAsTupla refeicao = (unpack(title refeicao), unpack(descricao refeicao))
 
